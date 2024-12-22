@@ -1,69 +1,44 @@
-import asyncio
-import hashlib
 import io
-import tempfile
-from typing import Union
-from fontTools.ttLib import woff2, ttFont
+import os
+import re
+import argparse
+from time import sleep
+import requests
+from urllib.parse import urlparse
 
-
-# async def request_font(font_name: str, retry: int = 5) \
-#         -> Union[tuple[bytes, str], tuple[None, str]]:
-#     url = 'https://static.jjwxc.net/tmp/fonts/{}.woff2?h=my.jjwxc.net'.format(font_name)
-#     headers = {
-#         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.5666.197 Safari/537.36",
-#         "Accept": "application/font-woff2;q=1.0,application/font-woff;q=0.9,*/*;q=0.8",
-#         "Accept-Language": "zh-CN,zh;q=0.5",
-#         "Referer": "https://my.jjwxc.net/",
-#         "Origin": "https://my.jjwxc.net"
-#     }
-
-#     client = httpx.AsyncClient(headers=headers, http2=True)
-#     while retry > 0:
-#         try:
-#             resp = await client.get(url, headers=headers, timeout=5, follow_redirects=True)
-
-#             if 200 <= resp.status_code < 300:
-#                 await client.aclose()
-#                 return resp.content, 'OK'
-
-#             if resp.status_code == 404:
-#                 await client.aclose()
-#                 return None, '404'
-
-#             retry = retry - 1
-
-#         except (httpx.TransportError, h2.exceptions.ProtocolError):
-#             await asyncio.sleep(5)
-#             retry = retry - 1
-
-#     await client.aclose()
-#     return None, 'ERROR'
-
-
-def woff2_to_ttf(input_bytest: bytes):
-    """将 woff2 bytes 转捣为 TTFont 对象"""
-    with io.BytesIO(input_bytest) as input_file:
-        with tempfile.TemporaryFile() as tmp:
-            woff2.decompress(input_file, tmp)
-            tmp.seek(0)
-            ttf = ttFont.TTFont(tmp)
-            return ttf
-
-
-async def get_font(font_path: str) -> dict[str, Union[str, bytes, ttFont.TTFont]]:
-    font_bytes, 
-
-    if status == 'OK':
-        m = hashlib.sha1()
-        m.update(font_bytes)
-        hashsum = m.hexdigest()
-
-        return {
-            "name": font_name,
-            "bytes": font_bytes,
-            "ttf": woff2_to_ttf(font_bytes),
-            "hashsum": hashsum,
-            "status": status
-        }
+def download_file(url, folder):
+    response = requests.get(url)
+    if response.status_code == 200:
+        parsed_url = urlparse(url)
+        filename = os.path.basename(parsed_url.path)
+        filename = os.path.join(folder, filename)
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+        print(f"Downloaded: {filename}")
+        return True
     else:
-        return {"status": status}
+        print(f"Failed to download: {url}")
+        return False
+
+def main():
+    parser = argparse.ArgumentParser(description="Download links from command line input")
+    parser.add_argument('input_string', type=str, help="Input string containing links")
+    args = parser.parse_args()
+
+    links = re.findall(r'(https?://\S+)', args.input_string)
+    if not os.path.exists('sample_font'):
+        os.makedirs('sample_font')
+
+    for link in links:
+        time = 0
+        while not download_file(link, 'sample_font'):
+            print("Retrying...")
+            sleep(0.6)
+            time += 1
+            if time > 5:
+                print("Failed to download file")
+                break
+        sleep(1)
+
+if __name__ == "__main__":
+    main()

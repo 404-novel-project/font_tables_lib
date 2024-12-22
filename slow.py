@@ -222,7 +222,7 @@ def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[s
         test_im = draw(test_char, test_font)
         most_match_char, most_match_rate, test_match_result = match_test_im_with_cache(test_im, std_font, guest_range)
         out[test_char] = most_match_char
-        # if(most_match_rate < 0.5):
+        # if (most_match_char == '使'):
         #     test_im.show()
         #     print(most_match_char)
         match_confidence += most_match_rate

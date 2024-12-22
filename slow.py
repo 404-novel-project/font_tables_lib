@@ -227,7 +227,7 @@ def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[s
         #     print(most_match_char)
         match_confidence += most_match_rate
 
-    return out, match_confidence
+    return out
 
 
 def match_font(font_fd: IO, font_ttf: ttFont.TTFont,

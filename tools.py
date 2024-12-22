@@ -25,17 +25,11 @@ async def match_font_tool(font_path,SC_Normal_path, SC_Regular_path,YaHei_path, 
     }
     init_true_font(std_font_dict, COORD_TABLE_PATH)
     guest_range = load_std_guest_range(COORD_TABLE_PATH)
-    most_match_table = None
-    most_match_confidence = 0
-    for std_font in std_font_dict.values():
-        with io.BytesIO(font.get('bytes')) as font_fd:
-            table, match_confidence = match_font(
-                font_fd, font.get('ttf'),
-                std_font, guest_range
-            )
-            if match_confidence > most_match_confidence:
-                most_match_table = table
-                most_match_confidence = match_confidence
-    return most_match_table
+    with io.BytesIO(font.get('bytes')) as font_fd:
+        table = match_font(
+            font_fd, font.get('ttf'),
+            std_font_dict, guest_range
+        )
+        return table
 
 

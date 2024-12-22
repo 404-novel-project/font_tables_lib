@@ -125,27 +125,22 @@ def init_true_font(std_font_dict, COORD_TABLE_PATH):
             COORD_TABLE_PATH,
             MICROSOFT_YAHEI_JSON_PATH)
 
-def match_test_im_with_cache(test_im: Image, std_font: ImageFont.FreeTypeFont, guest_range: list[str]):
+def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
     test_array = np.asarray(test_im)
-    npz_path_dict = {
-        "Source Han Sans SC Normal": SOURCE_HAN_SANS_SC_NORMAL_NPZ_PATH,
-        "Source Han Sans SC Regular": SOURCE_HAN_SANS_SC_REGULARL_NPZ_PATH,
-        "Microsoft YaHei": MICROSOFT_YAHEI_NPZ_PATH
+    npz_dict = {
+        "Source Han Sans SC Normal": load_std_im_np_arrays(SOURCE_HAN_SANS_SC_NORMAL_NPZ_PATH),
+        "Source Han Sans SC Regular": load_std_im_np_arrays(SOURCE_HAN_SANS_SC_REGULARL_NPZ_PATH),
+        "Microsoft YaHei Regular": load_std_im_np_arrays(MICROSOFT_YAHEI_NPZ_PATH)
     }
-    npz_path = npz_path_dict.get(' '.join(std_font.getname())) \
-               or SOURCE_HAN_SANS_SC_NORMAL_NPZ_PATH
+    
 
-    josn_path_dict = {
-        "Source Han Sans SC Normal": SOURCE_HAN_SANS_SC_NORMAL_JSON_PATH,
-        "Source Han Sans SC Regular": SOURCE_HAN_SANS_SC_REGULARL_JSON_PATH,
-        "Microsoft YaHei": MICROSOFT_YAHEI_JSON_PATH
+    josn_dict = {
+        "Source Han Sans SC Normal": load_std_im_black_point_rates(SOURCE_HAN_SANS_SC_NORMAL_JSON_PATH),
+        "Source Han Sans SC Regular": load_std_im_black_point_rates(SOURCE_HAN_SANS_SC_REGULARL_JSON_PATH),
+        "Microsoft YaHei Regular": load_std_im_black_point_rates(MICROSOFT_YAHEI_JSON_PATH)
     }
-    josn_path = josn_path_dict.get(' '.join(std_font.getname())) \
-                or SOURCE_HAN_SANS_SC_NORMAL_JSON_PATH
 
-    std_im_np_arrays = load_std_im_np_arrays(npz_path)
-    std_im_black_point_rates = load_std_im_black_point_rates(josn_path)
-
+    
     match_result = {}
     match_confidence = 0.0
     most_match_rate: float = 0.0
@@ -153,18 +148,18 @@ def match_test_im_with_cache(test_im: Image, std_font: ImageFont.FreeTypeFont, g
 
     test_im_black_point_rate = get_im_black_point_rate(test_im)
     for text in guest_range:
-        if abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
-            # 跳过黑色比例相较其自身差异 20% 以上的标准字符
-            continue
-
-        std_array = std_im_np_arrays[text]
-        match_rate = compare_im_np(test_array, std_array)
-
-        match_result[text] = match_rate
-
-        if match_rate > most_match_rate:
-            most_match = text
-            most_match_rate = match_rate
+        for true_font in std_font.values():
+            std_im_np_arrays = npz_dict.get(' '.join(true_font.getname()))
+            std_im_black_point_rates = josn_dict.get(' '.join(true_font.getname()))
+            if abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
+                # 跳过黑色比例相较其自身差异 20% 以上的标准字符
+                continue
+            std_array = std_im_np_arrays[text]
+            match_rate = compare_im_np(test_array, std_array)
+            if match_rate > most_match_rate:
+                most_match = text
+                most_match_rate = match_rate
+                match_result[text] = match_rate
 
     return most_match, most_match_rate, match_result
 
@@ -220,13 +215,16 @@ def load_std_im_black_point_rates(josn_path: str):
 
 
 def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[str],
-               std_font: ImageFont.FreeTypeFont, guest_range: list[str]):
+               std_font, guest_range: list[str]):
     out = {}
     match_confidence = 0.0
     for test_char in test_font_characters:
         test_im = draw(test_char, test_font)
         most_match_char, most_match_rate, test_match_result = match_test_im_with_cache(test_im, std_font, guest_range)
         out[test_char] = most_match_char
+        # if(most_match_rate < 0.5):
+        #     test_im.show()
+        #     print(most_match_char)
         match_confidence += most_match_rate
 
     return out, match_confidence

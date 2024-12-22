@@ -21,21 +21,22 @@ SOURCE_HAN_SANS_SC_NORMAL_NPZ_PATH = os.path.join(
     instance_path, 'SourceHanSansSC-Normal.npz')
 SOURCE_HAN_SANS_SC_REGULARL_NPZ_PATH = os.path.join(
     instance_path, 'SourceHanSansSC-Regular.npz')
+MICROSOFT_YAHEI_NPZ_PATH = os.path.join(
+    instance_path, 'Microsoft-Yahei.npz')
 SOURCE_HAN_SANS_SC_NORMAL_JSON_PATH = os.path.join(
     instance_path, 'SourceHanSansSC-Normal.json')
 SOURCE_HAN_SANS_SC_REGULARL_JSON_PATH = os.path.join(
     instance_path, 'SourceHanSansSC-Regular.json')
+MICROSOFT_YAHEI_JSON_PATH = os.path.join(
+    instance_path, 'Microsoft-Yahei.json')
 @lru_cache
 def _load_font(font, size=FONT_SIZE):
     return ImageFont.truetype(font, size=size)
 
 
-def load_SourceHanSansSC_Normal(SOURCE_HAN_SANS_SC_NORMAL_PATH) -> ImageFont.FreeTypeFont:
-    return _load_font(SOURCE_HAN_SANS_SC_NORMAL_PATH)
+def load_Font(font) -> ImageFont.FreeTypeFont:
+    return _load_font(font)
 
-
-def load_SourceHanSansSC_Regular(SOURCE_HAN_SANS_SC_REGULAR_PATH) -> ImageFont.FreeTypeFont:
-    return _load_font(SOURCE_HAN_SANS_SC_REGULAR_PATH)
 
 
 def load_std_guest_range(COORD_TABLE_PATH) -> list[str]:
@@ -114,19 +115,30 @@ def init_true_font(std_font_dict, COORD_TABLE_PATH):
             sourceHanSansSCRegular, 
             COORD_TABLE_PATH,
             SOURCE_HAN_SANS_SC_REGULARL_JSON_PATH)
+    if os.path.exists(MICROSOFT_YAHEI_NPZ_PATH) is not True:
+        save_std_im_np_arrays(std_font_dict.get('Microsoft-YaHei'),
+                              COORD_TABLE_PATH,
+                            MICROSOFT_YAHEI_NPZ_PATH)
+    if os.path.exists(MICROSOFT_YAHEI_JSON_PATH) is not True:
+        save_std_im_black_point_rates(
+            std_font_dict.get('Microsoft-YaHei'), 
+            COORD_TABLE_PATH,
+            MICROSOFT_YAHEI_JSON_PATH)
 
 def match_test_im_with_cache(test_im: Image, std_font: ImageFont.FreeTypeFont, guest_range: list[str]):
     test_array = np.asarray(test_im)
     npz_path_dict = {
         "Source Han Sans SC Normal": SOURCE_HAN_SANS_SC_NORMAL_NPZ_PATH,
-        "Source Han Sans SC Regular": SOURCE_HAN_SANS_SC_REGULARL_NPZ_PATH
+        "Source Han Sans SC Regular": SOURCE_HAN_SANS_SC_REGULARL_NPZ_PATH,
+        "Microsoft YaHei": MICROSOFT_YAHEI_NPZ_PATH
     }
     npz_path = npz_path_dict.get(' '.join(std_font.getname())) \
                or SOURCE_HAN_SANS_SC_NORMAL_NPZ_PATH
 
     josn_path_dict = {
         "Source Han Sans SC Normal": SOURCE_HAN_SANS_SC_NORMAL_JSON_PATH,
-        "Source Han Sans SC Regular": SOURCE_HAN_SANS_SC_REGULARL_JSON_PATH
+        "Source Han Sans SC Regular": SOURCE_HAN_SANS_SC_REGULARL_JSON_PATH,
+        "Microsoft YaHei": MICROSOFT_YAHEI_JSON_PATH
     }
     josn_path = josn_path_dict.get(' '.join(std_font.getname())) \
                 or SOURCE_HAN_SANS_SC_NORMAL_JSON_PATH
@@ -135,7 +147,7 @@ def match_test_im_with_cache(test_im: Image, std_font: ImageFont.FreeTypeFont, g
     std_im_black_point_rates = load_std_im_black_point_rates(josn_path)
 
     match_result = {}
-
+    match_confidence = 0.0
     most_match_rate: float = 0.0
     most_match: str = ''
 
@@ -154,7 +166,7 @@ def match_test_im_with_cache(test_im: Image, std_font: ImageFont.FreeTypeFont, g
             most_match = text
             most_match_rate = match_rate
 
-    return most_match, match_result
+    return most_match, most_match_rate, match_result
 
 
 def save_std_im_np_arrays(std_font: ImageFont.FreeTypeFont, COORD_TABLE_PATH:str, npz_path: str):
@@ -210,12 +222,14 @@ def load_std_im_black_point_rates(josn_path: str):
 def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[str],
                std_font: ImageFont.FreeTypeFont, guest_range: list[str]):
     out = {}
+    match_confidence = 0.0
     for test_char in test_font_characters:
         test_im = draw(test_char, test_font)
-        most_match_char, test_match_result = match_test_im_with_cache(test_im, std_font, guest_range)
+        most_match_char, most_match_rate, test_match_result = match_test_im_with_cache(test_im, std_font, guest_range)
         out[test_char] = most_match_char
+        match_confidence += most_match_rate
 
-    return out
+    return out, match_confidence
 
 
 def match_font(font_fd: IO, font_ttf: ttFont.TTFont,

@@ -10,14 +10,13 @@ async def main():
     sample_font_list = os.listdir(sample_font_path)
     true_font_path = os.path.join(os.path.dirname(__file__), 'true_font')
     SECRET_KEY = str(uuid4()),
-    # SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format(
-    #     os.path.join(app.instance_path, 'jjwxc.sqlite')),
 
     COORD_TABLE_PATH = os.path.join(true_font_path, 'coorTable.json')
     SOURCE_HAN_SANS_SC_NORMAL_PATH = os.path.join(
         true_font_path, 'SourceHanSansSC-Normal.otf')
     SOURCE_HAN_SANS_SC_REGULAR_PATH = os.path.join(
         true_font_path, 'SourceHanSansSC-Regular.otf')
+    YAHEI_PATH = os.path.join(true_font_path, 'Microsoft-YaHei.otf')
     ENABLE_TOOLS = os.getenv('ENABLE_TOOLS', False) and True
     CACHE_DIR = os.path.join(true_font_path, 'cache-dir')
     GEN_DIR = os.path.join(os.path.dirname(__file__), 'gen')
@@ -28,6 +27,7 @@ async def main():
         result = await match_font_tool(os.path.join(sample_font_path,sample_font),
                         SOURCE_HAN_SANS_SC_NORMAL_PATH,
                         SOURCE_HAN_SANS_SC_REGULAR_PATH,
+                        YAHEI_PATH,
                         COORD_TABLE_PATH)
         with open(os.path.join(GEN_DIR, sample_font + '.json'), 'w') as f:
             f.write(json.dumps(result))

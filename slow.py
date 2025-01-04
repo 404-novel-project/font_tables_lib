@@ -146,14 +146,16 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
     most_match: str = ''
 
     test_im_black_point_rate = get_im_black_point_rate(test_im)
+    if test_im_black_point_rate == 0:
+        text = ' '
+        most_match_rate = 1
+        match_result[text] = most_match_rate
+        return text, most_match_rate, match_result
     for text in guest_range:
         for true_font in std_font.values():
             std_im_np_arrays = npz_dict.get(' '.join(true_font.getname()))
             std_im_black_point_rates = josn_dict.get(' '.join(true_font.getname()))
-            if test_im_black_point_rate == 0:
-                if std_im_black_point_rates[text] != 0:
-                    continue
-            elif abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
+            if abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
                 # 跳过黑色比例相较其自身差异 20% 以上的标准字符
                 continue
             std_array = std_im_np_arrays[text]

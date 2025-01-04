@@ -2521,7 +2521,7 @@ character_list_7000 = [
     *string.digits,
     *string.ascii_letters,
     *string.punctuation,
-    "，。”“【】《》（）：；？！「」‘’<>",
+    *"，。”“【】《》（）：；？！「」‘’<>",
     "一",
     "乙",
     "二",

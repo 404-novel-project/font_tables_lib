@@ -147,7 +147,7 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
 
     test_im_black_point_rate = get_im_black_point_rate(test_im)
     if test_im_black_point_rate == 0:
-        text = ' '
+        text = ''
         most_match_rate = 1
         match_result[text] = most_match_rate
         return text, most_match_rate, match_result

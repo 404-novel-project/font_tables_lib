@@ -6,7 +6,7 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from fontTools.ttLib import ttFont
-
+from tqdm import tqdm
 from commonly_used_character import character_list
 from exception import ImageMatchError
 from quick import list_ttf_characters
@@ -142,7 +142,6 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
 
     
     match_result = {}
-    match_confidence = 0.0
     most_match_rate: float = 0.0
     most_match: str = ''
 
@@ -151,7 +150,10 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
         for true_font in std_font.values():
             std_im_np_arrays = npz_dict.get(' '.join(true_font.getname()))
             std_im_black_point_rates = josn_dict.get(' '.join(true_font.getname()))
-            if abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
+            if test_im_black_point_rate == 0:
+                if std_im_black_point_rates[text] != 0:
+                    continue
+            elif abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
                 # 跳过黑色比例相较其自身差异 20% 以上的标准字符
                 continue
             std_array = std_im_np_arrays[text]
@@ -218,7 +220,8 @@ def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[s
                std_font, guest_range: list[str]):
     out = {}
     match_confidence = 0.0
-    for test_char in test_font_characters:
+    print('match_font_1')
+    for test_char in tqdm(test_font_characters, desc="Matching characters", total=len(test_font_characters)):
         test_im = draw(test_char, test_font)
         most_match_char, most_match_rate, test_match_result = match_test_im_with_cache(test_im, std_font, guest_range)
         out[test_char] = most_match_char

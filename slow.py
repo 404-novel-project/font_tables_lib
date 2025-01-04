@@ -155,6 +155,8 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
         for true_font in std_font.values():
             std_im_np_arrays = npz_dict.get(' '.join(true_font.getname()))
             std_im_black_point_rates = josn_dict.get(' '.join(true_font.getname()))
+            if text not in std_im_np_arrays:
+                continue
             if abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
                 # 跳过黑色比例相较其自身差异 20% 以上的标准字符
                 continue

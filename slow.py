@@ -103,7 +103,7 @@ def draw(text: str, font: ImageFont.FreeTypeFont, size: tuple[int, int] = IMAGE_
     bbox = getbbox(image)
     image = image.crop(bbox)
     # 调整图像大小
-    image = image.resize(size, Image.ANTIALIAS)
+    image = image.resize(size)
     return image
 
 def compare_im_np(test_array: np.ndarray, std_array: np.ndarray):

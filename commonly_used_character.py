@@ -9523,5 +9523,3 @@ character_list_7000 = [
     "爨",
     "齉"
 ]
-
-character_list = character_list_7000

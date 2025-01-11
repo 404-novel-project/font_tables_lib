@@ -2,7 +2,7 @@ import io
 from typing import Union
 
 
-from commonly_used_character import character_list
+from commonly_used_character import character_list_7000 as character_list
 from slow import (
     load_Font,
     load_std_guest_range, match_font, match_font, init_true_font

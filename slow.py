@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from fontTools.ttLib import ttFont
 from tqdm import tqdm
-from commonly_used_character import character_list
+from commonly_used_character import character_list_7000 as character_list
 from exception import ImageMatchError
 from quick import list_ttf_characters
 from lib import load_std_font_coord_table
@@ -70,14 +70,41 @@ def _get_offset(im: Image, font: ImageFont.FreeTypeFont, text: str):
     offset_y = _offset_y - text_bbox[1]
     return offset_x, offset_y
 
+# left, upper, right, lower
+def getbbox(image: Image.Image):
+    width, height = image.size
+    x1 = width
+    y1 = height
+    x2 = -1
+    y2 = -1
+
+    for y in range(height):
+        for x in range(width):
+            if image.getpixel((x, y)) == 0:  # Assuming black is represented by 0
+                x1 = min(x1, x)
+                y1 = min(y1, y)
+                x2 = max(x2, x)
+                y2 = max(y2, y)
+    if x1 == width:
+        x1 = 0
+    if y1 == height:
+        y1 = 0
+    if x2 == -1:
+        x2 = width - 1
+    if y2 == -1:
+        y2 = height - 1
+    return x1, y1, x2, y2
 
 @lru_cache(maxsize=3500)
 def draw(text: str, font: ImageFont.FreeTypeFont, size: tuple[int, int] = IMAGE_SIZE):
     image = Image.new("1", size, "white")
     d = ImageDraw.Draw(image)
     d.text(_get_offset(image, font, text), text, font=font, fill="black")
+    bbox = getbbox(image)
+    image = image.crop(bbox)
+    # 调整图像大小
+    image = image.resize(size, Image.ANTIALIAS)
     return image
-
 
 def compare_im_np(test_array: np.ndarray, std_array: np.ndarray):
     if test_array.shape != std_array.shape:
@@ -90,6 +117,20 @@ def compare_im_np(test_array: np.ndarray, std_array: np.ndarray):
     # 求出共同黑色部分
     common_black_array = test_black_array & std_black_array
 
+    # 绘制图像
+    # fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    # axes[0].imshow(test_black_array, cmap='gray')
+    # axes[0].set_title('Test Black Array')
+    # axes[1].imshow(std_black_array, cmap='gray')
+    # axes[1].set_title('Standard Black Array')
+    # axes[2].imshow(common_black_array, cmap='gray')
+    # axes[2].set_title('Common Black Array')
+
+    # for ax in axes:
+    #     ax.axis('off')
+
+    # plt.tight_layout()
+    # plt.show()
     # 输出共同黑色部分占测试图像比例
     return np.count_nonzero(common_black_array) / np.count_nonzero(test_black_array)
 
@@ -140,17 +181,14 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
         "Microsoft YaHei Regular": load_std_im_black_point_rates(MICROSOFT_YAHEI_JSON_PATH)
     }
 
-    
-    match_result = {}
     most_match_rate: float = 0.0
     most_match: str = ''
 
     test_im_black_point_rate = get_im_black_point_rate(test_im)
     if test_im_black_point_rate == 0:
         text = ''
-        most_match_rate = 1
-        match_result[text] = most_match_rate
-        return text, most_match_rate, match_result
+        return text
+        
     for text in guest_range:
         for true_font in std_font.values():
             std_im_np_arrays = npz_dict.get(' '.join(true_font.getname()))
@@ -165,9 +203,7 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
             if match_rate > most_match_rate:
                 most_match = text
                 most_match_rate = match_rate
-                match_result[text] = match_rate
-
-    return most_match, most_match_rate, match_result
+    return most_match
 
 
 def save_std_im_np_arrays(std_font: ImageFont.FreeTypeFont, COORD_TABLE_PATH:str, npz_path: str):
@@ -223,17 +259,11 @@ def load_std_im_black_point_rates(josn_path: str):
 def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[str],
                std_font, guest_range: list[str]):
     out = {}
-    match_confidence = 0.0
     print('match_font_1')
     for test_char in tqdm(test_font_characters, desc="Matching characters", total=len(test_font_characters)):
         test_im = draw(test_char, test_font)
-        most_match_char, most_match_rate, test_match_result = match_test_im_with_cache(test_im, std_font, guest_range)
+        most_match_char = match_test_im_with_cache(test_im, std_font, guest_range)
         out[test_char] = most_match_char
-        # if (most_match_char == '使'):
-        #     test_im.show()
-        #     print(most_match_char)
-        match_confidence += most_match_rate
-
     return out
 
 

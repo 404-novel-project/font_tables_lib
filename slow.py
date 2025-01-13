@@ -3,7 +3,7 @@ import math
 from functools import lru_cache
 from typing import IO
 import os
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from fontTools.ttLib import ttFont

@@ -3,6 +3,7 @@ import math
 from functools import lru_cache
 from typing import IO
 import os
+# from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from fontTools.ttLib import ttFont
@@ -72,15 +73,16 @@ def _get_offset(im: Image, font: ImageFont.FreeTypeFont, text: str):
 
 # left, upper, right, lower
 def getbbox(image: Image.Image):
+    pixels = image.load()  # 加载像素数据
     width, height = image.size
     x1 = width
     y1 = height
     x2 = -1
     y2 = -1
 
-    for y in range(height):
-        for x in range(width):
-            if image.getpixel((x, y)) == 0:  # Assuming black is represented by 0
+    for x in range(width):
+        for y in range(height):
+            if pixels[x, y] == 0:  # Assuming black is represented by 0
                 x1 = min(x1, x)
                 y1 = min(y1, y)
                 x2 = max(x2, x)
@@ -93,6 +95,13 @@ def getbbox(image: Image.Image):
         x2 = width - 1
     if y2 == -1:
         y2 = height - 1
+    len = max(x2 - x1, max(0, y2 - y1)) // 2
+    xmid = (x1 + x2) // 2
+    ymid = (y1 + y2) // 2
+    x1 = max(xmid - len, 0)
+    y1 = max(ymid - len, 0)
+    x2 = min(xmid + len, width - 1)
+    y2 = min(ymid + len, height - 1)
     return x1, y1, x2, y2
 
 @lru_cache(maxsize=3500)
@@ -102,8 +111,7 @@ def draw(text: str, font: ImageFont.FreeTypeFont, size: tuple[int, int] = IMAGE_
     d.text(_get_offset(image, font, text), text, font=font, fill="black")
     bbox = getbbox(image)
     image = image.crop(bbox)
-    # 调整图像大小
-    image = image.resize(size)
+    image = image.resize(size, resample=3)
     return image
 
 def compare_im_np(test_array: np.ndarray, std_array: np.ndarray):
@@ -117,7 +125,7 @@ def compare_im_np(test_array: np.ndarray, std_array: np.ndarray):
     # 求出共同黑色部分
     common_black_array = test_black_array & std_black_array
 
-    # 绘制图像
+    # # 绘制图像
     # fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     # axes[0].imshow(test_black_array, cmap='gray')
     # axes[0].set_title('Test Black Array')
@@ -193,6 +201,8 @@ def match_test_im_with_cache(test_im: Image, std_font, guest_range: list[str]):
         for true_font in std_font.values():
             std_im_np_arrays = npz_dict.get(' '.join(true_font.getname()))
             std_im_black_point_rates = josn_dict.get(' '.join(true_font.getname()))
+            # if text != '「':
+            #     continue
             if text not in std_im_np_arrays:
                 continue
             if abs(test_im_black_point_rate - std_im_black_point_rates[text]) / test_im_black_point_rate > 0.2:
@@ -261,6 +271,8 @@ def match_font_1(test_font: ImageFont.FreeTypeFont, test_font_characters: list[s
     out = {}
     print('match_font_1')
     for test_char in tqdm(test_font_characters, desc="Matching characters", total=len(test_font_characters)):
+        # if test_char != '「':
+        #     continue
         test_im = draw(test_char, test_font)
         most_match_char = match_test_im_with_cache(test_im, std_font, guest_range)
         out[test_char] = most_match_char

@@ -1,7 +1,6 @@
 import json
 import os
 import asyncio
-from uuid import uuid4
 from tools import match_font_tool
 async def main():
     # 获取 sample_font文件夹下所有文件的路径

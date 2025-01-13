@@ -130,8 +130,19 @@ def compare_im_np(test_array: np.ndarray, std_array: np.ndarray):
     # plt.tight_layout()
     # plt.show()
     # 输出共同黑色部分占测试图像比例
-    rate = ( np.count_nonzero(common_black_array) / np.count_nonzero(test_black_array) +
-                np.count_nonzero(common_white_array) / np.count_nonzero(test_white_array) ) / 2
+    num_common_black = np.count_nonzero(common_black_array)
+    num_test_black = np.count_nonzero(test_black_array)
+    num_common_white = np.count_nonzero(common_white_array)
+    num_test_white = np.count_nonzero(test_white_array)
+    if num_test_black != 0 and num_test_white != 0:
+        rate = ( num_common_black / num_test_black +
+                    num_common_white / num_test_white ) / 2
+    elif num_test_black == 0 and num_test_white != 0:
+        rate = num_common_white / num_test_white
+    elif num_test_black != 0 and num_test_white == 0:
+        rate = num_common_black / num_test_black
+    else:
+        rate = 0
     return rate
 
 

@@ -47,7 +47,7 @@ async def main():
                 #10  # Limit to first 10 characters for testing
             )
             with open(os.path.join(GEN_DIR, sample_font_filename + '.json'), 'w', encoding='utf-8') as f:
-                json.dump(unified_result, f, ensure_ascii=False, indent=2)
+                json.dump(unified_result, f)
             print(f"Saved unified workflow output to {os.path.join(GEN_DIR, sample_font_filename + '.json')}")
         except Exception as e:
             print(f"Error processing {sample_font_filename} with unified workflow: {e}")
